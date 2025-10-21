@@ -1,4 +1,6 @@
 import React, { createContext, useState, useContext, useEffect } from 'react'
+import { authService } from '../services/authService'
+import toast from 'react-hot-toast'
 
 const AuthContext = createContext({})
 
@@ -17,15 +19,34 @@ export const AuthProvider = ({ children }) => {
 
   // Check authentication status on app load
   useEffect(() => {
-    const checkAuth = () => {
+    const checkAuth = async () => {
       try {
         const token = localStorage.getItem('token')
         const userData = localStorage.getItem('user')
 
         if (token && userData) {
           const parsedUser = JSON.parse(userData)
-          setUser(parsedUser)
-          setIsAuthenticated(true)
+          
+          // Verify token is still valid by fetching current user
+          try {
+            const response = await authService.getCurrentUser()
+            if (response.success) {
+              setUser(response.user)
+              setIsAuthenticated(true)
+            } else {
+              // Token invalid, clear storage
+              localStorage.removeItem('token')
+              localStorage.removeItem('user')
+              setUser(null)
+              setIsAuthenticated(false)
+            }
+          } catch (error) {
+            // Token expired or invalid
+            localStorage.removeItem('token')
+            localStorage.removeItem('user')
+            setUser(null)
+            setIsAuthenticated(false)
+          }
         } else {
           setUser(null)
           setIsAuthenticated(false)
@@ -34,7 +55,6 @@ export const AuthProvider = ({ children }) => {
         console.error('Error checking authentication:', error)
         setUser(null)
         setIsAuthenticated(false)
-        // Clear invalid data
         localStorage.removeItem('token')
         localStorage.removeItem('user')
       }
@@ -49,34 +69,23 @@ export const AuthProvider = ({ children }) => {
     try {
       setLoading(true)
 
-      // This is where you would normally make an API call
-      // For now, we'll use the dummy authentication logic
+      // Call actual API
+      const response = await authService.login(credentials)
       
-      if (credentials.user && credentials.token) {
-        // Direct login with user data (used by dummy login)
-        localStorage.setItem('token', credentials.token)
-        localStorage.setItem('user', JSON.stringify(credentials.user))
-        setUser(credentials.user)
+      if (response.success) {
+        setUser(response.user)
         setIsAuthenticated(true)
+        toast.success(`Welcome ${response.user.name}!`)
         return { success: true }
       } else {
-        // Normal login flow with email/password
-        // You would replace this with your actual API call
-        const response = await mockApiLogin(credentials)
-        
-        if (response.success) {
-          localStorage.setItem('token', response.token)
-          localStorage.setItem('user', JSON.stringify(response.user))
-          setUser(response.user)
-          setIsAuthenticated(true)
-          return { success: true }
-        } else {
-          return { success: false, error: response.error }
-        }
+        toast.error(response.error || 'Login failed')
+        return { success: false, error: response.error }
       }
     } catch (error) {
       console.error('Login error:', error)
-      return { success: false, error: 'Login failed. Please try again.' }
+      const errorMessage = error.response?.data?.error || 'Login failed. Please try again.'
+      toast.error(errorMessage)
+      return { success: false, error: errorMessage }
     } finally {
       setLoading(false)
     }
@@ -84,10 +93,10 @@ export const AuthProvider = ({ children }) => {
 
   // Logout function
   const logout = () => {
-    localStorage.removeItem('token')
-    localStorage.removeItem('user')
+    authService.logout()
     setUser(null)
     setIsAuthenticated(false)
+    toast.success('Logged out successfully')
   }
 
   // Register function
@@ -95,106 +104,24 @@ export const AuthProvider = ({ children }) => {
     try {
       setLoading(true)
       
-      // You would replace this with your actual API call
-      const response = await mockApiRegister(userData)
+      const response = await authService.register(userData)
       
       if (response.success) {
-        localStorage.setItem('token', response.token)
-        localStorage.setItem('user', JSON.stringify(response.user))
         setUser(response.user)
         setIsAuthenticated(true)
+        toast.success('Registration successful!')
         return { success: true }
       } else {
+        toast.error(response.error || 'Registration failed')
         return { success: false, error: response.error }
       }
     } catch (error) {
       console.error('Registration error:', error)
-      return { success: false, error: 'Registration failed. Please try again.' }
+      const errorMessage = error.response?.data?.error || 'Registration failed. Please try again.'
+      toast.error(errorMessage)
+      return { success: false, error: errorMessage }
     } finally {
       setLoading(false)
-    }
-  }
-
-  // Mock API functions (replace these with real API calls)
-  const mockApiLogin = async (credentials) => {
-    // Simulate API delay
-    await new Promise(resolve => setTimeout(resolve, 1000))
-    
-    // Dummy credentials for testing
-    const dummyCredentials = {
-      doctor: {
-        identifier: 'doctor@test.com',
-        password: 'doctor123',
-        userData: {
-          id: 'DOC001',
-          name: 'Dr. Sarah Johnson',
-          email: 'doctor@test.com',
-          role: 'doctor',
-          specialization: 'Internal Medicine',
-          license: 'MD12345'
-        }
-      },
-      patient: {
-        identifier: 'patient@test.com',
-        password: 'patient123',
-        userData: {
-          id: 'PAT001',
-          name: 'John Smith',
-          email: 'patient@test.com',
-          role: 'patient',
-          age: 35,
-          patientId: 'P12345'
-        }
-      },
-      admin: {
-        identifier: 'admin@test.com',
-        password: 'admin123',
-        userData: {
-          id: 'ADM001',
-          name: 'Admin User',
-          email: 'admin@test.com',
-          role: 'admin',
-          permissions: ['all']
-        }
-      }
-    }
-
-    // Check credentials
-    const roleCredentials = dummyCredentials[credentials.role]
-    
-    if (roleCredentials && 
-        credentials.identifier === roleCredentials.identifier && 
-        credentials.password === roleCredentials.password) {
-      
-      return {
-        success: true,
-        user: roleCredentials.userData,
-        token: 'dummy-jwt-token-' + Date.now()
-      }
-    } else {
-      return {
-        success: false,
-        error: 'Invalid credentials. Please check your email and password.'
-      }
-    }
-  }
-
-  const mockApiRegister = async (userData) => {
-    // Simulate API delay
-    await new Promise(resolve => setTimeout(resolve, 1000))
-    
-    // Mock successful registration
-    const newUser = {
-      id: 'USER' + Date.now(),
-      name: userData.name,
-      email: userData.email,
-      role: userData.role || 'patient'
-    }
-
-    return {
-      success: true,
-      user: newUser,
-      token: 'dummy-jwt-token-' + Date.now()
     }
   }
 
@@ -203,17 +130,45 @@ export const AuthProvider = ({ children }) => {
     try {
       setLoading(true)
       
-      // Mock API call
-      await new Promise(resolve => setTimeout(resolve, 500))
+      const response = await authService.updateProfile(updatedData)
       
-      const updatedUser = { ...user, ...updatedData }
-      localStorage.setItem('user', JSON.stringify(updatedUser))
-      setUser(updatedUser)
-      
-      return { success: true }
+      if (response.success) {
+        setUser(response.user)
+        toast.success('Profile updated successfully')
+        return { success: true }
+      } else {
+        toast.error(response.error || 'Update failed')
+        return { success: false, error: response.error }
+      }
     } catch (error) {
       console.error('Profile update error:', error)
-      return { success: false, error: 'Failed to update profile' }
+      const errorMessage = error.response?.data?.error || 'Failed to update profile'
+      toast.error(errorMessage)
+      return { success: false, error: errorMessage }
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  // Change password
+  const changePassword = async (currentPassword, newPassword) => {
+    try {
+      setLoading(true)
+      
+      const response = await authService.changePassword(currentPassword, newPassword)
+      
+      if (response.success) {
+        toast.success('Password changed successfully')
+        return { success: true }
+      } else {
+        toast.error(response.error || 'Password change failed')
+        return { success: false, error: response.error }
+      }
+    } catch (error) {
+      console.error('Change password error:', error)
+      const errorMessage = error.response?.data?.error || 'Failed to change password'
+      toast.error(errorMessage)
+      return { success: false, error: errorMessage }
     } finally {
       setLoading(false)
     }
@@ -226,7 +181,8 @@ export const AuthProvider = ({ children }) => {
     login,
     logout,
     register,
-    updateProfile
+    updateProfile,
+    changePassword
   }
 
   return (

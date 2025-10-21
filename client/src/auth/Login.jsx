@@ -2,7 +2,7 @@ import React, { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useForm } from 'react-hook-form'
 import { useAuth } from './AuthContext'
-import { FaEye, FaEyeSlash, FaUser, FaUserMd, FaUserShield } from 'react-icons/fa'
+import { FaEye, FaEyeSlash } from 'react-icons/fa'
 import toast from 'react-hot-toast'
 
 const Login = () => {
@@ -15,87 +15,16 @@ const Login = () => {
     register,
     handleSubmit,
     formState: { errors },
-    setValue,
-    watch
   } = useForm()
-
-  // Dummy credentials for testing
-  const dummyCredentials = {
-    doctor: {
-      identifier: 'doctor@test.com',
-      password: 'doctor123',
-      userData: {
-        id: 'DOC001',
-        name: 'Dr. Sarah Johnson',
-        email: 'doctor@test.com',
-        role: 'doctor',
-        specialization: 'Internal Medicine',
-        license: 'MD12345'
-      }
-    },
-    patient: {
-      identifier: 'patient@test.com',
-      password: 'patient123',
-      userData: {
-        id: 'PAT001',
-        name: 'John Smith',
-        email: 'patient@test.com',
-        role: 'patient',
-        age: 35,
-        patientId: 'P12345'
-      }
-    },
-    admin: {
-      identifier: 'admin@test.com',
-      password: 'admin123',
-      userData: {
-        id: 'ADM001',
-        name: 'Admin User',
-        email: 'admin@test.com',
-        role: 'admin',
-        permissions: ['all']
-      }
-    }
-  }
-
-  const selectedRole = watch('role')
-
-  // Function to fill dummy credentials
-  const fillDummyCredentials = (role) => {
-    const credentials = dummyCredentials[role]
-    if (credentials) {
-      setValue('identifier', credentials.identifier)
-      setValue('password', credentials.password)
-      setValue('role', role)
-      toast.success(`Filled ${role} credentials`)
-    }
-  }
 
   const onSubmit = async (data) => {
     setLoading(true)
     try {
-      // Simulate API call delay
-      await new Promise(resolve => setTimeout(resolve, 1000))
+      const loginResult = await login(data)
       
-      // Check if credentials match dummy data
-      const roleCredentials = dummyCredentials[data.role]
-      
-      if (roleCredentials && 
-          data.identifier === roleCredentials.identifier && 
-          data.password === roleCredentials.password) {
-        
-        // Simulate successful login with your AuthContext
-        const loginResult = await login({
-          user: roleCredentials.userData,
-          token: 'dummy-jwt-token-' + Date.now()
-        })
-        
-        toast.success(`Welcome ${roleCredentials.userData.name}!`)
-        
-        // Navigate to dashboard (your DashboardRoute will handle role-based rendering)
+      if (loginResult.success) {
+        // Navigate to dashboard (DashboardRoute will handle role-based rendering)
         navigate('/dashboard')
-      } else {
-        toast.error('Invalid credentials. Please use the dummy credentials provided.')
       }
     } catch (error) {
       toast.error('An unexpected error occurred')
@@ -114,42 +43,6 @@ const Login = () => {
                 <div className="text-center mb-4">
                   <h2 className="fw-bold text-dark">Welcome back</h2>
                   <p className="text-muted">Sign in to your account</p>
-                </div>
-
-                {/* Dummy Credentials Info */}
-                <div className="alert alert-info mb-4">
-                  <h6 className="fw-bold mb-2">
-                    <FaUser className="me-2" />
-                    Test Credentials
-                  </h6>
-                  <small className="d-block mb-2">Click to auto-fill credentials:</small>
-                  
-                  <div className="d-flex flex-wrap gap-2">
-                    <button
-                      type="button"
-                      className="btn btn-sm btn-outline-primary"
-                      onClick={() => fillDummyCredentials('doctor')}
-                    >
-                      <FaUserMd className="me-1" />
-                      Doctor
-                    </button>
-                    <button
-                      type="button"
-                      className="btn btn-sm btn-outline-success"
-                      onClick={() => fillDummyCredentials('patient')}
-                    >
-                      <FaUser className="me-1" />
-                      Patient
-                    </button>
-                    <button
-                      type="button"
-                      className="btn btn-sm btn-outline-warning"
-                      onClick={() => fillDummyCredentials('admin')}
-                    >
-                      <FaUserShield className="me-1" />
-                      Admin
-                    </button>
-                  </div>
                 </div>
 
                 <form onSubmit={handleSubmit(onSubmit)}>
@@ -172,13 +65,13 @@ const Login = () => {
 
                   {/* Email/Patient ID */}
                   <div className="mb-4">
-                    <label className="form-label fw-semibold">Email or Patient ID</label>
+                    <label className="form-label fw-semibold">Email or ID</label>
                     <input
                       type="text"
                       className={`form-control ${errors.identifier ? 'is-invalid' : ''}`}
-                      placeholder="Enter your email or patient ID"
+                      placeholder="Enter your email or ID"
                       {...register('identifier', { 
-                        required: 'Email or Patient ID is required' 
+                        required: 'Email or ID is required' 
                       })}
                     />
                     {errors.identifier && (
@@ -210,21 +103,10 @@ const Login = () => {
                         {showPassword ? <FaEyeSlash /> : <FaEye />}
                       </button>
                       {errors.password && (
-                        <div className="invalid-feedback">{errors.password.message}</div>
+                        <div className="invalid-feedback d-block">{errors.password.message}</div>
                       )}
                     </div>
                   </div>
-
-                  {/* Show credentials for selected role */}
-                  {selectedRole && dummyCredentials[selectedRole] && (
-                    <div className="alert alert-light mb-4">
-                      <small className="text-muted">
-                        <strong>Test credentials for {selectedRole}:</strong><br />
-                        Email: {dummyCredentials[selectedRole].identifier}<br />
-                        Password: {dummyCredentials[selectedRole].password}
-                      </small>
-                    </div>
-                  )}
 
                   {/* Forgot Password */}
                   <div className="mb-4">
@@ -240,9 +122,11 @@ const Login = () => {
                     disabled={loading}
                   >
                     {loading ? (
-                      <span className="loading-spinner me-2"></span>
-                    ) : null}
-                    {loading ? 'Signing in...' : 'Login'}
+                      <>
+                        <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                        Signing in...
+                      </>
+                    ) : 'Login'}
                   </button>
                 </form>
 
@@ -254,41 +138,6 @@ const Login = () => {
                       Sign up
                     </Link>
                   </p>
-                </div>
-
-                {/* Credentials Table */}
-                <div className="mt-4">
-                  <details className="text-muted">
-                    <summary className="cursor-pointer small fw-semibold">View All Test Credentials</summary>
-                    <div className="mt-2">
-                      <table className="table table-sm">
-                        <thead>
-                          <tr>
-                            <th>Role</th>
-                            <th>Email</th>
-                            <th>Password</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          <tr>
-                            <td><span className="badge bg-primary">Doctor</span></td>
-                            <td><small>doctor@test.com</small></td>
-                            <td><small>doctor123</small></td>
-                          </tr>
-                          <tr>
-                            <td><span className="badge bg-success">Patient</span></td>
-                            <td><small>patient@test.com</small></td>
-                            <td><small>patient123</small></td>
-                          </tr>
-                          <tr>
-                            <td><span className="badge bg-warning">Admin</span></td>
-                            <td><small>admin@test.com</small></td>
-                            <td><small>admin123</small></td>
-                          </tr>
-                        </tbody>
-                      </table>
-                    </div>
-                  </details>
                 </div>
               </div>
             </div>
