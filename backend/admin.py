@@ -3,7 +3,7 @@ from generate import generate_code,generate_password
 from mail import send_credential
 import bcrypt
 
-def add_admin(first_name,last_name,hospital,phone,email,address,password):
+def add_admin(first_name,last_name,phone,email,address,password):
     try:
         admin_id = generate_code()
         passcode = password
@@ -11,7 +11,7 @@ def add_admin(first_name,last_name,hospital,phone,email,address,password):
         password = hashed_password.decode('utf-8')
         conn = connection()
         cur = conn.cursor()
-        cur.execute(f"INSERT INTO admin (admin_id,first_name,last_name,hospital,phone,email,address,password) VALUES {(admin_id,first_name.lower(),last_name.lower(),hospital.lower(),phone,email.lower(),address.lower(),password)}")
+        cur.execute(f"INSERT INTO admin (admin_id,first_name,last_name,phone,email,address,password) VALUES {(admin_id,first_name.lower(),last_name.lower(),phone,email.lower(),address.lower(),password)}")
         conn.commit()
         cur.close()
         conn.close()

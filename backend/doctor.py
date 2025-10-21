@@ -3,7 +3,7 @@ from generate import generate_code,generate_password
 from mail import send_credential
 import bcrypt
 
-def add_doctor(first_name,last_name,hospital,phone,email,department,experience,admin_id):
+def add_doctor(first_name,last_name,phone,email,department,experience,admin_id):
     try:
         doctor_id = generate_code()
         passcode = generate_password(email,phone)
@@ -11,7 +11,7 @@ def add_doctor(first_name,last_name,hospital,phone,email,department,experience,a
         password = hashed_password.decode('utf-8')
         conn = connection()
         cur = conn.cursor()
-        cur.execute(f"INSERT INTO doctor (doctor_id,first_name,last_name,hospital,phone,email,department,experience,admin_id,password) VALUES {(doctor_id,first_name.lower(),last_name.lower(),hospital.lower(),phone,email.lower(),department.lower(),experience,admin_id,password)}")
+        cur.execute(f"INSERT INTO doctor (doctor_id,first_name,last_name,phone,email,department,experience,admin_id,password) VALUES {(doctor_id,first_name.lower(),last_name.lower(),phone,email.lower(),department.lower(),experience,admin_id,password)}")
         conn.commit()
         cur.close()
         conn.close()
@@ -30,11 +30,11 @@ def delete_doctor(doctor_id):
     except Exception as e:
         return "Error deleting doctor."
     
-def update_doctor(doctor_id,first_name,last_name,hospital,phone,email):
+def update_doctor(doctor_id,first_name,last_name,phone,email):
     try:
         conn = connection()
         cur = conn.cursor()
-        cur.execute(f"UPDATE doctor SET first_name = {first_name.lower()}, last_name = {last_name.lower()}, hospital = {hospital.lower()}, phone = {phone}, email = {email.lower()} WHERE doctor_id = {doctor_id}")
+        cur.execute(f"UPDATE doctor SET first_name = {first_name.lower()}, last_name = {last_name.lower()}, phone = {phone}, email = {email.lower()} WHERE doctor_id = {doctor_id}")
         conn.commit()
         cur.close()
         conn.close()

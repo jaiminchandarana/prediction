@@ -15,7 +15,7 @@ def creat_doctor():
     try:
         conn = connection()
         cur = conn.cursor()
-        cur.execute(r"CREATE TABLE doctor (doctor_id BIGINT PRIMARY KEY,first_name VARCHAR(50) NOT NULL,last_name VARCHAR(50) NOT NULL,hospital VARCHAR(50) NOT NULL,phone BIGINT NOT NULL,email VARCHAR(50) NOT NULL,department VARCHAR(30),experience INT,admin_id BIGINT NOT NULL,password VARCHAR(100) NOT NULL,CONSTRAINT chk_email_format CHECK (email ~* '^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$'),CONSTRAINT add_fk FOREIGN KEY (admin_id) REFERENCES admin(admin_id),CONSTRAINT unique_email2 UNIQUE (email),CONSTRAINT unique_phone2 UNIQUE (phone)")
+        cur.execute(r"CREATE TABLE doctor (doctor_id BIGINT PRIMARY KEY,first_name VARCHAR(50) NOT NULL,last_name VARCHAR(50) NOT NULL,phone BIGINT NOT NULL,email VARCHAR(50) NOT NULL,department VARCHAR(30),experience INT,admin_id BIGINT NOT NULL,password VARCHAR(100) NOT NULL,status VARCHAR(20) NOT NULL, license_no BIGINT NOT NULL, qualification VARCHAR(20) NOT NULL, specialization VARCHAR(20) NOT NULL, CONSTRAINT chk_email_format CHECK (email ~* '^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$'),CONSTRAINT add_fk FOREIGN KEY (admin_id) REFERENCES admin(admin_id),CONSTRAINT unique_email2 UNIQUE (email),CONSTRAINT unique_phone2 UNIQUE (phone)")
         conn.commit()
         cur.close()
         conn.close()
